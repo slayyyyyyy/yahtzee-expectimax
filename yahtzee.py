@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, random
 import itertools
 
 def roll():
@@ -127,6 +127,42 @@ def euristica_simpla():
                 elif roll2_3 in smallstraight:
                     score = 30
     return score
+
+class Nod:
+    def __init__(self, _info, _parinte = None, _h = 0):
+        self.info = _info
+        self.parinte = _parinte
+        self.h = _h
+        self.succesori = []
+
+    def drumRadacina(self):
+        nod = self
+        drum = []
+        while nod:
+            drum.insert(0, nod)
+            nod = nod.parinte
+        return drum
+
+class Arbore:
+    def __init__(self, _start, _scopuri):
+        self.start = _start
+        self.scopuri = _scopuri
+
+    def scop(self, informatieNod):
+        return informatieNod in self.scopuri
+
+    def succesori(self, nod):
+        info = nod.info
+        for i in range(1,6):
+            info_nou = info[:]
+            reroll = random.sample (range(5), i)
+            for j in reroll:
+                info_nou[j] = random.randint(1,6)
+            nod_nou = Nod(info_nou, nod.h + 1)
+            nod.succesori.append(nod_nou)
+
+def euristica_medie():
+    return
 
 s = 0
 for i in range(1000000):
