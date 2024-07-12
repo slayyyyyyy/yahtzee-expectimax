@@ -1,32 +1,14 @@
 from random import randint, random
 import itertools
 
-def roll():
-    return [randint(1, 6) for _ in range(5)]
-
-def valideaza_input(prompt, raspuns_valid):
-    raspuns = input(prompt).strip().lower()
-    while raspuns not in raspuns_valid:
-        print("INPUT INCORECT\n")
-        raspuns = input(prompt).strip().lower()
-    return raspuns
-
-def swap(lista_zaruri):
-    while True:
-        swap_zaruri = input("Cu ce zaruri vrei să mai dai o dată? (1-5) ").replace(",", "").replace(" ", "")
-        if all(d.isdigit() and 1 <= int(d) <= 5 for d in swap_zaruri):
-            break
-        print("INPUT INCORECT")
-    swap_zar = [int(d) - 1 for d in swap_zaruri]
-    for index in swap_zar:
-        lista_zaruri[index] = randint(1, 6)
-    return lista_zaruri, swap_zar
+def roll(n):
+    return [randint(1, 6) for _ in range(n)]
 
 def tip_roll(lista_zaruri):
     valori_zaruri = {x: lista_zaruri.count(x) for x in set(lista_zaruri)}
     valori_unice_zaruri = sorted(set(lista_zaruri))
     rezultat = {
-        "THREE OF A KIND": 3 in valori_zaruri.values() and len(valori_zaruri) > 2,
+        "FULL HOUSE": set(valori_zaruri.values()) == {3, 2},
         "SMALL STRAIGHT": any(
             valori_unice_zaruri[i:i + 4] in [list(range(x, x + 4)) for x in range(1, 4)] for i in range(len(valori_unice_zaruri) - 3)
         )
@@ -56,7 +38,7 @@ smallstraight = [[1,1,2,3,4], [1,2,2,3,4], [1,2,3,3,4], [1,2,3,4,4], [1,2,3,4,5]
 
 def euristica_simpla():
     score = 0
-    roll_1 = roll()
+    roll_1 = roll(5)
     roll_1.sort()
 
     if roll_1 in fullhouse:
@@ -64,7 +46,7 @@ def euristica_simpla():
     elif roll_1 in smallstraight:
         score = 30
     else:
-        roll_2 = roll()
+        roll_2 = roll(5)
         roll_2.sort()
 
         if roll_2 in fullhouse:
@@ -72,25 +54,25 @@ def euristica_simpla():
         elif roll_2 in smallstraight:
             score = 30
         else:
-            roll_3 = roll()
+            roll_3 = roll(5)
             roll_3.sort()
 
             if roll_3 in fullhouse:
                 score = 25
             elif roll_3 in smallstraight:
                 score = 30
-    roll2_1 = roll()
+    roll2_1 = roll(5)
     roll2_1.sort()
     if score == 25:
         if roll2_1 in smallstraight:
             score = 55
         else:
-            roll2_2 = roll()
+            roll2_2 = roll(5)
             roll2_2.sort()
             if roll2_2 in smallstraight:
                 score = 55
             else:
-                roll2_3 = roll()
+                roll2_3 = roll(5)
                 roll2_3.sort()
                 if roll2_3 in smallstraight:
                     score = 55
@@ -98,12 +80,12 @@ def euristica_simpla():
         if roll2_1 in fullhouse:
             score = 55
         else:
-            roll2_2 = roll()
+            roll2_2 = roll(5)
             roll2_2.sort()
             if roll2_2 in fullhouse:
                 score = 55
             else:
-                roll2_3 = roll()
+                roll2_3 = roll(5)
                 roll2_3.sort()
                 if roll2_3 in fullhouse:
                     score = 55
@@ -113,14 +95,14 @@ def euristica_simpla():
         elif roll2_1 in smallstraight:
             score = 30
         else:
-            roll2_2 = roll()
+            roll2_2 = roll(5)
             roll2_2.sort()
             if roll2_2 in fullhouse:
                 score = 25
             elif roll2_2 in smallstraight:
                 score = 30
             else:
-                roll2_3 = roll()
+                roll2_3 = roll(5)
                 roll2_3.sort()
                 if roll2_3 in fullhouse:
                     score = 25
@@ -134,7 +116,7 @@ class Nod:
         self.parinte = _parinte
         self.h = _h
         self.succesori = []
-
+        
     def drumRadacina(self):
         nod = self
         drum = []
@@ -161,8 +143,54 @@ class Arbore:
             nod_nou = Nod(info_nou, nod.h + 1)
             nod.succesori.append(nod_nou)
 
+def distanta_combinatie(zaruri, combinatii):
+    distante = [len(set(comb) - set(zaruri)) for comb in combinatii]
+    return min(distante)
+
 def euristica_medie():
-    return
+    def runda():
+        roll_1 = roll()
+        distanta_smallstraight = distanta_combinatie(roll_1, smallstraight)
+        distanta_fullhouse = distanta_combinatie(roll_1, fullhouse)
+
+        if distanta_fullhouse == 0:
+            return roll_1, "full house"
+
+        if distanta_smallstraight == 0:
+            return roll_1, "small straight"
+
+        if distanta_smallstraight < distanta_fullhouse:
+            target= "small straight"
+            combinatie_potentiala = smallstraight
+        else:
+            target = "full house"
+            combinatie_potentiala = fullhouse
+
+        distante = [len(set(comb) - set(roll_1)) for comb in combinatie_potentiala]
+        index_distanta_minima = distante.index(min(distante))
+        zaruri_pastrate = set(combinatie_potentiala[index_distanta_minima]).intersection(roll_1)
+
+        nr_zaruri_reroll = 5 - len(zaruri_pastrate)
+        reroll = roll(nr_zaruri_reroll)
+        roll_nou = list(zaruri_pastrate) + reroll
+
+        return roll_nou, target
+
+    runda1_roll, runda1_target = runda()
+
+    if sorted(runda1_roll) in [sorted(x) for x in smallstraight]:
+        return runda1_roll, 30
+    elif sorted(runda1_roll) in [sorted(x) for x in fullhouse]:
+        return runda1_roll, 25
+
+    runda2_roll, runda2_target = runda()
+
+    if sorted(runda2_roll) in [sorted(x) for x in smallstraight]:
+        return runda2_roll, 30
+    elif sorted(runda2_roll) in [sorted(x) for x in fullhouse]:
+        return runda2_roll, 25
+    else:
+        return runda2_roll
 
 s = 0
 for i in range(1000000):
